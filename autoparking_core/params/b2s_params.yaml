@@ -1,0 +1,5 @@
+bridge_2_server:
+  - server_url: http://127.0.0.1:5000
+  - api_endpoint_vehicle_stt: apiv1/vehicle/status
+  - api_endpoint_vehicle_cmd: apiv1/vehicle/command
+  - api_endpoint_parkinglot_stt: apiv1/parking_slot/status
