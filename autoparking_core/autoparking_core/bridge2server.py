@@ -2,6 +2,9 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
+import os
+from ament_index_python.packages import get_package_share_directory
+
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -10,7 +13,13 @@ class Bridge2Server(Node):
     def __init__(self):
         super().__init__("bridge_2_server")
 
-        self.fb_cred = credentials.Certificate('/workspaces/Project_APS_new/test/automatic-parking-system-d5cf1-firebase-adminsdk-46o21-a2dafb7f3f.json')
+        # Get the path to the package's 'share' directory
+        package_share_directory = get_package_share_directory('autoparking_core')
+
+        # Construct the full path to your file
+        firebase_creds_file_path = os.path.join(package_share_directory, 'autoparking-project-firebase-adminsdk-dldvj-5b4a6edb39.json')
+        
+        self.fb_cred = credentials.Certificate(firebase_creds_file_path)
         self.fb_default_app = firebase_admin.initialize_app(self.fb_cred)
         self.fb_db = firestore.client()
 
@@ -69,7 +78,10 @@ class Bridge2Server(Node):
 
         existing_value = self.slot_dict.get(license_plate)
         if existing_value == f"{vstatus},{current_slot}":
+            # self.get_logger().info(f"vehicle stt same")
             return
+        # else:
+        #     self.get_logger().info(f"new vehicle stt {license_plate} {vstatus} {current_slot}")
         
         self.slot_dict[license_plate] = f"{vstatus},{current_slot}"
 
@@ -86,8 +98,8 @@ class Bridge2Server(Node):
             vehicle_id = doc.id
             doc_ref.update({"status": vstatus,
                             "parking_slot": current_slot})
-
-        if vstatus == "ready-to-park" or "not-parked":
+            
+        if (vstatus == "ready-to-park") or (vstatus == "not-parked"):
 
             psquery = self.ref_parking_slot.where("vehicle_id", "==", vehicle_id)
             psdoc = psquery.stream()
@@ -97,6 +109,7 @@ class Bridge2Server(Node):
                 doc_ref.update({"vehicle_id": ""})
 
         else:
+
             psquery = self.ref_parking_slot.where("slot_name", "==", current_slot)
             psdoc = psquery.stream()
 

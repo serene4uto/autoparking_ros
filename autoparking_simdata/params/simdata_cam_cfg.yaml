@@ -1,0 +1,3 @@
+autoparking_simdata:
+  sim_data_cam:
+    data_path: /workspaces/Project_APS_new

@@ -3,35 +3,45 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 
+import os
+
 import cv2
 from cv_bridge import CvBridge
-
-FAKE_CAM_DATA_PATH = {
-    "not-parked"  : "/workspaces/Project_APS_new/fake_cam_data/AB123/not_parked.mp4",
-
-    "on-parking" : ["/workspaces/Project_APS_new/fake_cam_data/AB123/A1_onparking.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A2_onparking.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A3_onparking.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A4_onparking.mp4",],
-
-    "parked"     : ["/workspaces/Project_APS_new/fake_cam_data/AB123/A1_parked.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A2_parked.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A3_parked.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A4_parked.mp4",],
-
-    "on-leaving" : ["/workspaces/Project_APS_new/fake_cam_data/AB123/A1_onleaving.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A2_onleaving.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A3_onleaving.mp4",
-                    "/workspaces/Project_APS_new/fake_cam_data/AB123/A4_onleaving.mp4",]
-}
-
 
 FAKE_CAM_SLOT_DATA = ["A1", "A2", "A3", "A4"]
 FRAME_RATE = 50
 
 class SimDataCam(Node):
     def __init__(self):
-        super().__init__("sim_data_cam")
+        super().__init__("sim_data_cam_node")
+
+        # # Set default parameters
+        self.declare_parameter('data_path', '')
+
+        # Get parameters
+        self.sim_data_path = self.get_parameter('data_path').get_parameter_value().string_value
+
+        # self.sim_data_path = "/workspaces/Project_APS_new"
+
+
+        self.FAKE_CAM_DATA_PATH = {
+            "not-parked"  : os.path.join(self.sim_data_path, "fake_cam_data/AB123/not_parked.mp4"),
+
+            "on-parking" : [os.path.join(self.sim_data_path, "fake_cam_data/AB123/A1_onparking.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A2_onparking.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A3_onparking.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A4_onparking.mp4"),],
+
+            "parked"     : [os.path.join(self.sim_data_path, "fake_cam_data/AB123/A1_parked.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A2_parked.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A3_parked.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A4_parked.mp4"),],
+
+            "on-leaving" : [os.path.join(self.sim_data_path, "fake_cam_data/AB123/A1_onleaving.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A2_onleaving.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A3_onleaving.mp4"),
+                            os.path.join(self.sim_data_path, "fake_cam_data/AB123/A4_onleaving.mp4"),]
+        }        
 
         self.vstt_sub = self.create_subscription(String, "aps/vehicle_status", self.on_vehicle_stt_receive, 10)
         self.camevent_pub = self.create_publisher(String, "aps_simdata/cam_event", 10)
@@ -40,7 +50,7 @@ class SimDataCam(Node):
         self.sdc_timer = self.create_timer(1/FRAME_RATE, self.on_timer)
 
         self.bridge = CvBridge()
-        self.current_vcap = cv2.VideoCapture(FAKE_CAM_DATA_PATH["not-parked"])
+        self.current_vcap = cv2.VideoCapture(self.FAKE_CAM_DATA_PATH["not-parked"])
 
         self.license_plate = "AB123"
 
@@ -77,16 +87,16 @@ class SimDataCam(Node):
             if self.vstt_change == True:
                 self.current_vcap.release()
                 if self.current_vstt == "not-parked" or self.current_vstt == "ready-to-park":
-                    self.current_vcap = cv2.VideoCapture(FAKE_CAM_DATA_PATH["not-parked"])
+                    self.current_vcap = cv2.VideoCapture(self.FAKE_CAM_DATA_PATH["not-parked"])
 
                 if self.current_vstt == "on-parking":
-                    self.current_vcap = cv2.VideoCapture(FAKE_CAM_DATA_PATH["on-parking"][FAKE_CAM_SLOT_DATA.index(self.current_slot)])
+                    self.current_vcap = cv2.VideoCapture(self.FAKE_CAM_DATA_PATH["on-parking"][FAKE_CAM_SLOT_DATA.index(self.current_slot)])
 
                 if self.current_vstt == "on-leaving":
-                    self.current_vcap = cv2.VideoCapture(FAKE_CAM_DATA_PATH["on-leaving"][FAKE_CAM_SLOT_DATA.index(self.current_slot)])
+                    self.current_vcap = cv2.VideoCapture(self.FAKE_CAM_DATA_PATH["on-leaving"][FAKE_CAM_SLOT_DATA.index(self.current_slot)])
 
                 if self.current_vstt == "parked" :
-                    self.current_vcap = cv2.VideoCapture(FAKE_CAM_DATA_PATH["parked"][FAKE_CAM_SLOT_DATA.index(self.current_slot)])
+                    self.current_vcap = cv2.VideoCapture(self.FAKE_CAM_DATA_PATH["parked"][FAKE_CAM_SLOT_DATA.index(self.current_slot)])
 
                 self.vstt_change = False
 
